@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const pug = require('pug');
+const htmlToText = require('html-to-text');
 
 module.exports = class Email {
   constructor(user, url) {
@@ -8,7 +10,7 @@ module.exports = class Email {
     this.from = `Mert Doe <${rocess.env.EMAIL_FROM}>`;
   }
 
-  createTransport() {
+  newTransport() {
     if (process.env.NODE_ENV === 'production') {
       // sendgrid
       return 1;
@@ -26,36 +28,31 @@ module.exports = class Email {
   }
 
   // Send the actual email
-  send(template, subject) {
+  async send(template, subject) {
     // Render HTML based on the pug/jade template
-
+    const html = pug.renderFile(
+      `${__dirname}/../views/emails/${template}.pug`,
+      {
+        firstName: this.firstName,
+        url: this.url,
+        subject,
+      }
+    );
     // Define email options
     const mailOptions = {
-      from: 'Mert Doe <mert_doe@g.com>',
-      to: options.email,
-      subject: options.subject,
-      text: options.message,
+      from: this.from,
+      to: this.to,
+      subject,
+      html,
+      text: htmlToText.fromString(html),
       //html:
     };
 
     // Create a transport and send email
+    await this.newTransport().sendMail(mailOptions);
   }
 
-  sendWelcome() {
-    this.send('welcome', 'Welcome to the Natours Family!');
+  async sendWelcome() {
+    await this.send('welcome', 'Welcome to the Natours Family!');
   }
-};
-
-const sendEmail = async (options) => {
-  // 2) Define email options
-  const mailOptions = {
-    from: 'Mert Doe <mert_doe@g.com>',
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    //html:
-  };
-
-  // 3) Actually send the email
-  await transporter.sendMail(mailOptions);
 };
